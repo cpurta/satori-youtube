@@ -9,9 +9,9 @@ import (
 	"regexp"
 	"sync"
 
-	"github.com/cpurta/go-crawler/cmd/internal/config"
-	"github.com/cpurta/go-crawler/cmd/internal/satori"
-	"github.com/cpurta/go-crawler/cmd/internal/youtube"
+	"github.com/cpurta/satori/satori-youtube/cmd/internal/config"
+	"github.com/cpurta/satori/satori-youtube/cmd/internal/satori"
+	"github.com/cpurta/satori/satori-youtube/cmd/internal/youtube"
 	"github.com/willf/bloom"
 )
 
