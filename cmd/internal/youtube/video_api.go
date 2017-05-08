@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
+	"log"
 	"net/http"
 )
 
@@ -59,7 +60,11 @@ func (client *VideoAPIClient) ListReqeust(id string) (*VideoListResponse, error)
 	}
 
 	defer res.Body.Close()
-	body, _ := ioutil.ReadAll(res.Body)
+	body, err := ioutil.ReadAll(res.Body)
+	if err != nil {
+		log.Println("Error reading YouTube API response body:", err.Error())
+		return nil, err
+	}
 
 	var videoResponse VideoListResponse
 	err = json.Unmarshal(body, &videoResponse)
