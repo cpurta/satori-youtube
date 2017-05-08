@@ -3,7 +3,7 @@ package satori
 import (
 	"encoding/json"
 
-	"github.com/cpurta/go-crawler/cmd/internal/config"
+	"github.com/cpurta/satori/satori-youtube/cmd/internal/config"
 	"github.com/satori-com/satori-rtm-sdk-go/rtm"
 	"github.com/satori-com/satori-rtm-sdk-go/rtm/auth"
 )
