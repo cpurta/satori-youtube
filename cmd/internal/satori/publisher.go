@@ -2,6 +2,7 @@ package satori
 
 import (
 	"encoding/json"
+	"log"
 
 	"github.com/cpurta/satori/satori-youtube/cmd/internal/config"
 	"github.com/satori-com/satori-rtm-sdk-go/rtm"
@@ -59,4 +60,6 @@ func (publisher *SatoriPublisher) Publish() {
 	}
 
 	publisher.Client.Stop()
+
+	log.Println("Publisher stopped publishing")
 }

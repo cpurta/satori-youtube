@@ -4,15 +4,18 @@ import (
 	"encoding/json"
 	"errors"
 	"flag"
+	"fmt"
 	"log"
 	"net/url"
 	"regexp"
+	"runtime"
 	"sync"
+	"time"
 
 	"github.com/cpurta/satori/satori-youtube/cmd/internal/config"
 	"github.com/cpurta/satori/satori-youtube/cmd/internal/satori"
 	"github.com/cpurta/satori/satori-youtube/cmd/internal/youtube"
-	"github.com/willf/bloom"
+	"github.com/patrickmn/go-cache"
 )
 
 var (
@@ -23,7 +26,7 @@ var (
 
 	validURL *regexp.Regexp
 
-	filterLock sync.Mutex
+	cacheLock sync.Mutex
 
 	throttle chan int
 	pubChan  chan json.RawMessage
@@ -45,13 +48,13 @@ func main() {
 	}
 
 	throttle = make(chan int, crawlers)
-	filterLock = sync.Mutex{}
+	cacheLock = sync.Mutex{}
 
 	if search != "" {
 		validURL = regexp.MustCompile(search)
 	}
 
-	filter := bloom.New(100000, 100)
+	cache := cache.New(5*time.Minute, 5*time.Minute)
 
 	pubChan = make(chan json.RawMessage)
 
@@ -63,27 +66,38 @@ func main() {
 
 	fetcher := URLFetcher{}
 	log.Println("Starting crawl...")
-	Crawl(seedUrl, depth, fetcher, filter, client)
+
+	go printStats()
+
+	wg := &sync.WaitGroup{}
+	wg.Add(1)
+	Crawl(seedUrl, depth, fetcher, cache, client, wg)
+
+	wg.Wait()
+
+	close(throttle)
 
 	publisher.Shutdown()
+
+	close(pubChan)
 }
 
-func Crawl(searchUrl string, depth int, fetcher Fetcher, filter *bloom.BloomFilter, client *youtube.VideoAPIClient) {
+func Crawl(searchUrl string, depth int, fetcher Fetcher, c *cache.Cache, client *youtube.VideoAPIClient, wg *sync.WaitGroup) {
 	throttle <- 1
+	defer wg.Done()
 
 	if depth <= 0 {
 		return
 	}
 
-	filterLock.Lock()
-	crawled := filter.TestString(searchUrl)
-	filterLock.Unlock()
+	cacheLock.Lock()
+	_, crawled := c.Get(searchUrl)
+	cacheLock.Unlock()
 
-	var wg sync.WaitGroup
 	if !crawled {
-		filterLock.Lock()
-		filter.AddString(searchUrl)
-		filterLock.Unlock()
+		cacheLock.Lock()
+		c.Add(searchUrl, true, cache.DefaultExpiration)
+		cacheLock.Unlock()
 
 		host, _ := url.Parse(searchUrl)
 
@@ -98,6 +112,7 @@ func Crawl(searchUrl string, depth int, fetcher Fetcher, filter *bloom.BloomFilt
 		}
 
 		urls, err := fetcher.Fetch(searchUrl)
+
 		if err != nil {
 			log.Printf("Error fetching results from %s: %s\n", searchUrl, err.Error())
 		}
@@ -108,17 +123,23 @@ func Crawl(searchUrl string, depth int, fetcher Fetcher, filter *bloom.BloomFilt
 			}
 
 			if validURL.MatchString(u) && urlTest.MatchString(u) {
+				<-throttle
 				wg.Add(1)
-				go func(u string, depth int, fetcher Fetcher, filter *bloom.BloomFilter) {
-					defer wg.Done()
-					Crawl(u, depth-1, fetcher, filter, client)
-				}(u, depth, fetcher, filter)
+				go Crawl(u, depth-1, fetcher, c, client, wg)
 			}
 		}
 	}
+}
 
-	<-throttle
-	wg.Wait()
+func printStats() {
+	for {
+		var m runtime.MemStats
+		runtime.ReadMemStats(&m)
+
+		fmt.Printf("Go Routines: %d\nHeap Allocated: %d\nTotal Memory Allocated: %d\n", runtime.NumGoroutine(), int64(m.HeapAlloc), int64(m.TotalAlloc))
+
+		time.Sleep(time.Second * 10)
+	}
 }
 
 func initFlags() {
