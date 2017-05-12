@@ -52,7 +52,9 @@ func (publisher *SatoriPublisher) Publish() {
 		select {
 		case message := <-publisher.publish:
 			if publisher.Client.IsConnected() {
-				publisher.Client.Publish(publisher.Channel, message)
+				if err := publisher.Client.Publish(publisher.Channel, message); err != nil {
+					log.Println("Error publishing message to Satori:", err.Error())
+				}
 			}
 		default:
 			// do nothing
