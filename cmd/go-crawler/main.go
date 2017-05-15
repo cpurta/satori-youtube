@@ -60,7 +60,7 @@ func main() {
 
 	client := youtube.NewVideoAPIClient(config.YoutubeAuth)
 
-	go printStats(urls)
+	go cleanURLs(urls)
 
 	fetcher := URLFetcher{}
 	log.Println("Starting crawl...")
@@ -86,9 +86,14 @@ func main() {
 	close(pubChan)
 }
 
-func printStats(urls chan string) {
+func cleanURLs(urls chan string) {
 	for {
-		log.Println("URL Channel Length:", len(urls))
+		if len(urls) == cap(urls) {
+			log.Println("Dumping half of the urls from the channel to make room")
+			for i := 0; i < cap(urls)/2; i++ {
+				<-urls
+			}
+		}
 
 		time.Sleep(time.Second * 5)
 	}
