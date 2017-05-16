@@ -18,7 +18,7 @@ import (
 var (
 	seedUrl  string
 	search   string
-	depth    int
+	limit    int
 	routines int
 
 	validURL *regexp.Regexp
@@ -49,7 +49,7 @@ func main() {
 		validURL = regexp.MustCompile(search)
 	}
 
-	cache := cache.New(5*time.Minute, 5*time.Minute)
+	cache := cache.New(5*time.Minute, 10*time.Minute)
 
 	pubChan = make(chan json.RawMessage)
 	urls := make(chan string, 250000)
@@ -100,7 +100,7 @@ func cleanURLs(urls chan string) {
 }
 
 func initFlags() {
-	flag.IntVar(&depth, "depth", 0, "The depth of how far the crawler will search in the network graph. Must be greater than 0.")
+	flag.IntVar(&limit, "limit", 1000000, "The number of urls that will be crawled before shutting down (default 1000000).")
 	flag.StringVar(&seedUrl, "seed-url", "", "The root url from which the crawler will look for network links.")
 	flag.StringVar(&search, "search", "^.*$", `Regex that will be used against the urls crawled. Only urls matching the regex will be crawled. e.g. ^http(s)?://cnn.com\?+([0-9a-zA-Z]=[0-9a-zA-Z])$`)
 	flag.IntVar(&routines, "crawlers", 10, "The number of concurrent crawling routines that will be used to crawl the web. Default: 10")
@@ -111,7 +111,7 @@ func checkFlags() error {
 	if seedUrl == "" {
 		return errors.New("url flag cannot be empty")
 	}
-	if depth <= 0 {
+	if limit <= 0 {
 		return errors.New("depth cannot be less than to equal to 0")
 	}
 

@@ -71,7 +71,6 @@ func (crawler *Crawler) Crawl() {
 
 					if validURL.MatchString(newURL) && urlTest.MatchString(newURL) {
 						crawler.urlChan <- newURL
-						log.Printf("Pushed %s to url channel\n", newURL)
 					}
 				}
 			}
@@ -79,6 +78,10 @@ func (crawler *Crawler) Crawl() {
 			if crawler.shutdown {
 				return
 			}
+		}
+
+		if crawler.cache.ItemCount() == limit {
+			return
 		}
 	}
 }
