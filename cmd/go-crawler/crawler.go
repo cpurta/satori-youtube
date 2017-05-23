@@ -41,8 +41,6 @@ func (crawler *Crawler) Crawl() {
 			cacheLock.Unlock()
 
 			if !crawled {
-				log.Println("Crawling", u)
-
 				cacheLock.Lock()
 				crawler.cache.Add(u, true, cache.DefaultExpiration)
 				cacheLock.Unlock()

@@ -62,6 +62,8 @@ func main() {
 
 	go cleanURLs(urls)
 
+	go printStats(cache)
+
 	fetcher := URLFetcher{}
 	log.Println("Starting crawl...")
 
@@ -84,6 +86,14 @@ func main() {
 	publisher.Shutdown()
 
 	close(pubChan)
+}
+
+func printStats(c *cache.Cache) {
+	for {
+		log.Printf("URLs Crawled: %d\n", c.ItemCount())
+
+		time.Sleep(time.Second * 10)
+	}
 }
 
 func cleanURLs(urls chan string) {
