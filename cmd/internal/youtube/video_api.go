@@ -6,6 +6,8 @@ import (
 	"io/ioutil"
 	"log"
 	"net/http"
+
+	"github.com/PuerkitoBio/goquery"
 )
 
 type VideoAPIClient struct {
@@ -70,4 +72,49 @@ func (client *VideoAPIClient) ListReqeust(id string) (*VideoListResponse, error)
 	err = json.Unmarshal(body, &videoResponse)
 
 	return &videoResponse, err
+}
+
+func ScrapeSnippetData(url string) (Snippet, error) {
+	var snippet Snippet
+
+	doc, err := goquery.NewDocument(url)
+	if err != nil {
+		return snippet, err
+	}
+
+	published := doc.Find("strong.watch-time-text").Contents().Text()
+	channelTitle := doc.Find("div.yt-user-info a").Contents().Text()
+	title := doc.Find("span.watch-title").Contents().Text()
+	description := doc.Find("p#eow-description").Contents().Text()
+
+	snippet = Snippet{
+		PublishedAt:  published,
+		ChannelTitle: channelTitle,
+		Title:        title,
+		Description:  description,
+	}
+
+	return snippet, nil
+}
+
+func ScrapeStatisticsData(url string) (Statistics, error) {
+	var stats Statistics
+
+	doc, err := goquery.NewDocument(url)
+	if err != nil {
+		return stats, err
+	}
+
+	viewCount := doc.Find(".watch-view-count").Contents().Text()
+	likes := doc.Find("button.like-button-renderer-like-button span.yt-uix-button-content").Contents().Text()
+	dislikes := doc.Find("button.like-button-renderer-dislike-button span.yt-uix-button-content").Contents().Text()
+	commentCount := doc.Find("h2.comment-section-header-renderer b").Contents().Text()
+	stats = Statistics{
+		ViewCount:    viewCount,
+		LikeCount:    likes,
+		DislikeCount: dislikes,
+		CommentCount: commentCount,
+	}
+
+	return stats, err
 }
