@@ -48,7 +48,7 @@ func main() {
 		validURL = regexp.MustCompile(search)
 	}
 
-	cache := cache.New(5*time.Minute, 10*time.Minute)
+	cache := cache.New(cache.NoExpiration, 10*time.Minute)
 
 	pubChan = make(chan json.RawMessage)
 	urls := make(chan string, 250000)
