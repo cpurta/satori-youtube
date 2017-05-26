@@ -11,7 +11,6 @@ import (
 
 	"github.com/cpurta/satori/satori-youtube/cmd/internal/config"
 	"github.com/cpurta/satori/satori-youtube/cmd/internal/satori"
-	"github.com/cpurta/satori/satori-youtube/cmd/internal/youtube"
 	"github.com/patrickmn/go-cache"
 )
 
@@ -58,8 +57,6 @@ func main() {
 	publisher.Start()
 	go publisher.Publish()
 
-	client := youtube.NewVideoAPIClient(config.YoutubeAuth)
-
 	go cleanURLs(urls)
 
 	go printStats(cache)
@@ -71,7 +68,7 @@ func main() {
 
 	var wg sync.WaitGroup
 	for i := 0; i < routines; i++ {
-		crawlers[i] = NewCrawler(pubChan, urls, fetcher, cache, client)
+		crawlers[i] = NewCrawler(pubChan, urls, fetcher, cache)
 		wg.Add(1)
 		go func(i int) {
 			defer wg.Done()
