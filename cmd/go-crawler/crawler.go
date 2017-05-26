@@ -5,6 +5,7 @@ import (
 	"log"
 	"net/url"
 
+	"github.com/PuerkitoBio/goquery"
 	"github.com/cpurta/satori/satori-youtube/cmd/internal/youtube"
 	cache "github.com/patrickmn/go-cache"
 )
@@ -14,17 +15,15 @@ type Crawler struct {
 	urlChan     chan string
 	fetcher     Fetcher
 	cache       *cache.Cache
-	client      *youtube.VideoAPIClient
 	shutdown    bool
 }
 
-func NewCrawler(pc chan json.RawMessage, urls chan string, fetcher Fetcher, c *cache.Cache, client *youtube.VideoAPIClient) *Crawler {
+func NewCrawler(pc chan json.RawMessage, urls chan string, fetcher Fetcher, c *cache.Cache) *Crawler {
 	return &Crawler{
 		publishChan: pc,
 		urlChan:     urls,
 		fetcher:     fetcher,
 		cache:       c,
-		client:      client,
 		shutdown:    false,
 	}
 }
@@ -46,13 +45,18 @@ func (crawler *Crawler) Crawl() {
 				cacheLock.Unlock()
 
 				urlquery, _ := url.Parse(u)
-				videoResp, err := crawler.client.ListReqeust(urlquery.Query().Get("v"))
-				if err != nil {
-					log.Println("Error getting video snippet from YouTube API:", err.Error())
+				doc, err := goquery.NewDocument(u)
+				snippet := youtube.ScrapeSnippetData(doc)
+				stats := youtube.ScrapeStatisticsData(doc)
+
+				videoResp := youtube.VideoData{
+					ID:         urlquery.Query().Get("v"),
+					Snippet:    snippet,
+					Statistics: stats,
 				}
 
-				if err == nil && len(videoResp.Items) > 0 {
-					message, _ := json.Marshal(videoResp.Items[0])
+				if err == nil && videoResp.ID != "" {
+					message, _ := json.Marshal(videoResp)
 					pubChan <- message
 				}
 
