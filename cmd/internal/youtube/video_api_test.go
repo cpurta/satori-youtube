@@ -22,7 +22,6 @@ func TestScrapeSnippetData(t *testing.T) {
 	fmt.Println("Description:", snippet.Description)
 	fmt.Println("Channel Title:", snippet.ChannelTitle)
 	fmt.Println("Published at:", snippet.PublishedAt)
-	fmt.Println("Category ID:", snippet.CategoryID)
 	fmt.Println("Tags:", snippet.Tags)
 }
 

@@ -17,7 +17,6 @@ type Snippet struct {
 	Title        string   `json:"title"`
 	Description  string   `json:"description"`
 	ChannelTitle string   `json:"channel_title"`
-	CategoryID   string   `json:"category_id"`
 	Tags         []string `json:"tags"`
 }
 
@@ -25,7 +24,7 @@ type Statistics struct {
 	ViewCount    string `json:"view_count"`
 	LikeCount    string `json:"like_count"`
 	DislikeCount string `json:"dislike_count"`
-	CommentCount string `json:"comment_count"`
+	CommentCount string `json:"comment_count,omitempty"`
 }
 
 func ScrapeSnippetData(doc *goquery.Document) Snippet {
@@ -33,7 +32,6 @@ func ScrapeSnippetData(doc *goquery.Document) Snippet {
 	channelTitle := doc.Find("div.yt-user-info a").Contents().Text()
 	title := doc.Find("span.watch-title").Contents().Text()
 	description := doc.Find("p#eow-description").Contents().Text()
-	categoryID := doc.Find("a.g-hovercard yt-uix-sessionlink spf-link").Contents().Text()
 
 	// go and collect all the catgory tags
 	tags := make([]string, 0)
@@ -46,12 +44,13 @@ func ScrapeSnippetData(doc *goquery.Document) Snippet {
 		})
 	})
 
+	published = sanitizeString(published, []string{"Published on "}, "")
+
 	snippet := Snippet{
 		PublishedAt:  published,
 		ChannelTitle: channelTitle,
 		Title:        title,
 		Description:  description,
-		CategoryID:   categoryID,
 		Tags:         tags,
 	}
 
@@ -62,7 +61,7 @@ func ScrapeStatisticsData(doc *goquery.Document) Statistics {
 	views := doc.Find(".watch-view-count").Contents().Text()
 	likes := doc.Find("button.like-button-renderer-like-button span.yt-uix-button-content").Contents().Text()
 	dislikes := doc.Find("button.like-button-renderer-dislike-button span.yt-uix-button-content").Contents().Text()
-	commentCount := doc.Find("h2.comment-section-header-renderer").Contents().Text()
+	// commentCount := doc.Find("h2.comment-section-header-renderer").Text()
 
 	views = sanitizeString(views, []string{" views", ","}, "")
 	likes = sanitizeString(likes, []string{","}, "")
@@ -72,7 +71,7 @@ func ScrapeStatisticsData(doc *goquery.Document) Statistics {
 		ViewCount:    views,
 		LikeCount:    likes[:len(likes)/2], // for some reason scraping like and dislikes concats the LikeCount+1 to the count
 		DislikeCount: dislikes[:len(dislikes)/2],
-		CommentCount: commentCount,
+		// CommentCount: commentCount,
 	}
 
 	return stats
